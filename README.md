@@ -54,7 +54,7 @@ Doubao requires an **Endpoint ID** (`ep-...`) for high performance.
 <a name="chinese"></a>
 ## 🇨🇳 中文
 
-**AI 字幕翻译器 v2** 是一款专为速度和准确性打造的下一代字幕翻译工具。
+** SubPilot | AI** 是一款专为速度和准确性打造的下一代字幕翻译工具。
 
 ### ✨以此版本的新特性
 -   **🚀 极速翻译**：支持高并发批量翻译（可达 20+ 并发），几分钟内搞定 5000+ 行字幕。
