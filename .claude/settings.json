@@ -1,0 +1,17 @@
+{
+    "permissions": {
+        "allow": [
+            "Read files in src/",
+            "Write files in src/",
+            "Run npm commands",
+            "Run vitest"
+        ],
+        "deny": [
+            "Delete files outside src/",
+            "Modify package-lock.json directly"
+        ]
+    },
+    "environment": {
+        "NODE_ENV": "development"
+    }
+}
