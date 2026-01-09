@@ -1,5 +1,5 @@
 /**
- * Subtitle Translator - Core Types
+ * SubPilot - Core Types
  * 核心类型定义
  */
 

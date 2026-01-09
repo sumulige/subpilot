@@ -1,6 +1,6 @@
 # 🚀 部署文档
 
-> 本文档介绍如何将 Subtitle Translator v2 部署到各种环境。
+> 本文档介绍如何将 SubPilot 部署到各种环境。
 
 ---
 
@@ -23,18 +23,78 @@ npm start       # 启动生产服务器
 
 ## Vercel 部署（推荐）
 
-Vercel 是 Next.js 官方推荐的托管平台，部署最简单。
+Vercel 是 Next.js 官方推荐的托管平台。
 
-### 步骤
-1. 将代码推送到 GitHub/GitLab
-2. 访问 [vercel.com](https://vercel.com) 并登录
-3. 点击 "Import Project" → 选择你的仓库
-4. 保持默认设置，点击 "Deploy"
-5. 等待 2-3 分钟，获得 `https://your-app.vercel.app` 地址
+### 1. 安装 Vercel CLI
 
-### 环境变量
-无需配置。所有 API Key 都在用户浏览器本地存储。
+```bash
+npm install -g vercel
+vercel login
+```
 
+### 2. 关联项目
+
+```bash
+cd /path/to/subpilot
+vercel link
+```
+
+交互式问答：
+```
+? Set up "~/Documents/subpilot"? yes
+? Which scope? <your-username>'s projects
+? Link to existing project? no
+? Project name? subpilot
+? Code directory? ./
+? Want to modify settings? N
+? Change additional settings? N
+✅ Linked (created .vercel)
+? Connect repository? Y
+```
+
+### 3. 获取配置信息
+
+```bash
+cat .vercel/project.json
+```
+
+输出：
+```json
+{
+  "orgId": "team_xxxxxxxxxx",
+  "projectId": "prj_yyyyyyyyyy"
+}
+```
+
+### 4. 配置 GitHub Secrets
+
+在 **Settings → Secrets → Actions** 添加：
+
+| Secret | 获取方式 |
+|---|---|
+| `VERCEL_ORG_ID` | `.vercel/project.json` 的 `orgId` |
+| `VERCEL_PROJECT_ID` | `.vercel/project.json` 的 `projectId` |
+| `VERCEL_TOKEN` | [Vercel Tokens](https://vercel.com/account/tokens) |
+
+### 5. 配置自定义域名
+
+**Vercel 控制台：** Settings → Domains → 添加 `subpilot.your-domain.com`
+
+**域名服务商 DNS：**
+
+| 类型 | 主机记录 | 记录值 |
+|---|---|---|
+| CNAME | subpilot | cname.vercel-dns.com |
+
+### 6. 部署
+
+```bash
+# 命令行部署
+vercel --prod
+
+# 或推送到 GitHub 自动部署
+git push origin main
+```
 ---
 
 ## Docker 部署
@@ -71,8 +131,8 @@ export default nextConfig;
 
 ### 构建 & 运行
 ```bash
-docker build -t subtitle-translator .
-docker run -p 3000:3000 subtitle-translator
+docker build -t subpilot .
+docker run -p 3000:3000 subpilot
 ```
 
 ---
@@ -89,7 +149,7 @@ npm install -g pm2
 npm run build
 
 # 使用 PM2 启动
-pm2 start npm --name "subtitle-translator" -- start
+pm2 start npm --name "subpilot" -- start
 
 # 设置开机自启
 pm2 startup

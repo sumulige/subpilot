@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Subtitle Translator - Main Page
+ * SubPilot - Main Page
  * 批量字幕翻译工具
  */
 
@@ -146,7 +146,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4 max-w-4xl">
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">⚡ Subtitle Translator</h1>
+          <h1 className="text-3xl font-bold mb-2">⚡ SubPilot</h1>
           <p className="text-muted-foreground">AI 驱动的批量字幕翻译，支持 50+ 种语言</p>
         </header>
 
@@ -298,7 +298,7 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-8 text-sm text-muted-foreground">
-          Subtitle Translator v2 • Built with Next.js 15 + shadcn/ui
+          SubPilot • Built with Next.js 15 + shadcn/ui
         </footer>
       </div>
     </div>

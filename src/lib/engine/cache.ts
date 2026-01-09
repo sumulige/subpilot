@@ -5,7 +5,7 @@
 
 import { openDB, type IDBPDatabase } from 'idb';
 
-const DB_NAME = 'subtitle-translator';
+const DB_NAME = 'subpilot';
 const STORE_NAME = 'translations';
 const DB_VERSION = 1;
 

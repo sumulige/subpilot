@@ -10,7 +10,7 @@
 <a name="english"></a>
 ## 🇬🇧 English
 
-**Subtitle Translator v2** is a next-generation subtitle translation tool designed for professional speed and context preservation.
+**SubPilot** is a next-generation subtitle translation tool designed for professional speed and context preservation.
 
 ### ✨ Key Features
 - **🚀 Ultra-Fast**: Concurrent batch translation (supports 20+ parallel requests), translating 5000+ lines in minutes.
@@ -22,8 +22,8 @@
 ### 🚀 Quick Start
 1.  **Clone the repo**
     ```bash
-    git clone https://github.com/your-repo/subtitle-translator-v2.git
-    cd subtitle-translator-v2
+    git clone https://github.com/sumulige/subpilot.git
+    cd subpilot
     ```
 2.  **Install dependencies**
     ```bash
@@ -66,8 +66,8 @@ Doubao requires an **Endpoint ID** (`ep-...`) for high performance.
 ### 🚀 快速开始
 1.  **克隆项目**
     ```bash
-    git clone https://github.com/your-repo/subtitle-translator-v2.git
-    cd subtitle-translator-v2
+    git clone https://github.com/sumulige/subpilot.git
+    cd subpilot
     ```
 2.  **安装依赖**
     ```bash
