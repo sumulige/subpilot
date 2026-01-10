@@ -298,7 +298,15 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-8 text-sm text-muted-foreground">
-          SubPilot • Built with Next.js 15 + shadcn/ui
+          © 2026 SubPilot • by{' '}
+          <a
+            href="https://gengnuo-1257145452.cos.ap-beijing.myqcloud.com/uPic/2024-11-21/14:10:19-InQEtF.png"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            sumulige
+          </a>
         </footer>
       </div>
     </div>
