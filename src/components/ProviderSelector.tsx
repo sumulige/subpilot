@@ -8,6 +8,7 @@
 import { registry } from '@/lib/providers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/lib/i18n/context';
 
 interface ProviderSelectorProps {
     value: string;
@@ -15,22 +16,23 @@ interface ProviderSelectorProps {
 }
 
 export function ProviderSelector({ value, onChange }: ProviderSelectorProps) {
+    const { t } = useTranslation();
     const schemas = registry.list();
     const apiProviders = schemas.filter((s) => s.type === 'api');
     const llmProviders = schemas.filter((s) => s.type === 'llm');
 
     return (
         <div className="space-y-2">
-            <Label>翻译服务</Label>
+            <Label>{t('settings.provider')}</Label>
             <Select value={value} onValueChange={onChange}>
                 <SelectTrigger>
-                    <SelectValue placeholder="选择翻译服务" />
+                    <SelectValue placeholder={t('settings.providerPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                     {apiProviders.length > 0 && (
                         <>
                             <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                传统 API
+                                {t('settings.apiProviders')}
                             </div>
                             {apiProviders.map((schema) => (
                                 <SelectItem key={schema.id} value={schema.id}>
@@ -42,7 +44,7 @@ export function ProviderSelector({ value, onChange }: ProviderSelectorProps) {
                     {llmProviders.length > 0 && (
                         <>
                             <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                AI 大模型
+                                {t('settings.llmProviders')}
                             </div>
                             {llmProviders.map((schema) => (
                                 <SelectItem key={schema.id} value={schema.id}>

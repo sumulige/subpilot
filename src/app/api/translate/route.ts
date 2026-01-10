@@ -21,13 +21,25 @@ interface TranslateRequest {
     baseUrl?: string;
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
     temperature?: number;
+    cacheConfig?: {
+        enabled: boolean;
+        type?: 'explicit' | 'implicit';
+        key?: string;
+        ttl?: number;
+    };
 }
 
 // ============================================================================
 // Provider Factory
 // ============================================================================
 
-function createModel(provider: string, model: string, apiKey: string, baseUrl?: string) {
+function createModel(
+    provider: string,
+    model: string,
+    apiKey: string,
+    baseUrl?: string,
+    cacheConfig?: TranslateRequest['cacheConfig']
+) {
     switch (provider) {
         case 'openai':
             return createOpenAI({
@@ -47,6 +59,25 @@ function createModel(provider: string, model: string, apiKey: string, baseUrl?: 
                 name: 'doubao',
                 apiKey,
                 baseURL: (baseUrl || 'https://ark.cn-beijing.volces.com/api/v3').replace(/\/chat\/completions\/?$/, '').replace(/\/$/, ''),
+                fetch: async (url, init) => {
+                    if (cacheConfig?.enabled && init && init.method === 'POST' && init.body) {
+                        try {
+                            const body = JSON.parse(init.body as string);
+                            // Inject Doubao context_cache param
+                            body.context_cache = {
+                                mode: "session",
+                                ttl: cacheConfig.ttl || 3600
+                            };
+                            // If user provided a key, maybe use it? But Doubao 'session' mode is usually automatic or ID based.
+                            // The user example used context_cache param in chat completion.
+                            // We assign modified body back
+                            init.body = JSON.stringify(body);
+                        } catch (e) {
+                            console.warn('Failed to inject context_cache for Doubao', e);
+                        }
+                    }
+                    return fetch(url, init);
+                },
             }).chatModel(model);
 
         case 'tongyi':
@@ -100,13 +131,13 @@ export async function POST(request: NextRequest) {
 
     try {
         const body: TranslateRequest = await request.json();
-        const { provider, model, apiKey, baseUrl, messages, temperature = 0.3 } = body;
+        const { provider, model, apiKey, baseUrl, messages, temperature = 0.3, cacheConfig } = body;
 
         console.log(`[${requestId}] Translating with ${provider}/${model}`);
         console.log(`[${requestId}] Messages:`, JSON.stringify(messages, null, 2));
 
         // 创建模型实例
-        const modelInstance = createModel(provider, model, apiKey, baseUrl);
+        const modelInstance = createModel(provider, model, apiKey, baseUrl, cacheConfig);
 
         // 调用 AI SDK
         const result = await generateText({

@@ -25,6 +25,13 @@ export interface TranslationRequest {
     systemPrompt?: string;
     /** 取消信号 */
     signal?: AbortSignal;
+    /** 上下文缓存配置 */
+    cacheConfig?: {
+        enabled: boolean;
+        type?: 'explicit' | 'implicit'; // implicit usually doesn't need config, but for consistency
+        key?: string; // Cache ID or Key
+        ttl?: number; // TTL in seconds
+    };
 }
 
 /** 翻译结果 */

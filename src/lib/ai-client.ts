@@ -13,6 +13,12 @@ interface TranslateOptions {
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
     temperature?: number;
     signal?: AbortSignal;
+    cacheConfig?: {
+        enabled: boolean;
+        type?: 'explicit' | 'implicit';
+        key?: string;
+        ttl?: number;
+    };
 }
 
 interface TranslateResult {
@@ -50,6 +56,7 @@ export async function translate(options: TranslateOptions): Promise<TranslateRes
                 baseUrl,
                 messages,
                 temperature,
+                cacheConfig: options.cacheConfig,
             }),
             signal,
         });

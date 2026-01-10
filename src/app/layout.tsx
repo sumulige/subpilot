@@ -17,18 +17,22 @@ export const metadata: Metadata = {
   description: "AI 驱动的批量字幕翻译工具，支持 50+ 种语言，高并发极速翻译",
 };
 
+import { I18nProvider } from '@/lib/i18n/context';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <I18nProvider>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

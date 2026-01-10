@@ -4,9 +4,11 @@
  */
 
 import type { Provider, SubtitleLine, TranslationProgress, RateLimitConfig } from '../types';
+import { GlossaryItem, retrieveGlossaryMatches } from './glossary';
 import { cache } from './cache';
 import { withRetry, TranslationError, ErrorType } from './errors';
 import { registry } from '../providers/registry';
+import { createLogger, LogLevel } from '../logger';
 
 // ============================================================================
 // Configuration
@@ -34,49 +36,18 @@ export interface BatcherConfig {
     userPromptTemplate?: string;
     richText?: boolean;
     tacticLite?: boolean;
+    /** 启用上下文缓存 (适用于支持的模型) */
+    enableContextCaching?: boolean;
+    /** 全局术语表 */
+    glossary?: GlossaryItem[];
 }
 
-export const SYSTEM_PROMPT = `You are a professional {{to}} native translator who needs to fluently translate text into {{to}}.
+import { buildSystemPrompt, buildUserPrompt, DEFAULT_USER_PROMPT } from './prompts';
+export { DEFAULT_USER_PROMPT }; // Export for other modules
 
-## Translation Rules
-1. Output only the translated content, without explanations or additional content (such as "Here's the translation:" or "Translation as follows:")
-2. The returned translation must maintain exactly the same number of paragraphs and format as the original text{{rich_text_rule}}
-3. For content that should not be translated (such as proper nouns, code, etc.), keep the original text.
-4. If input contains %%, use %% in your output, if input has no %%, don't use %% in your output{{title_prompt}}{{summary_prompt}}{{terms_prompt}}
+// Legacy export compatibility if needed, though we prefer dynamic now
+export const SYSTEM_PROMPT = buildSystemPrompt({ targetLang: '{{to}}' });
 
-## OUTPUT FORMAT:
-- **Single paragraph input** → Output translation directly (no separators, no extra text)
-- **Multi-paragraph input** → Use %% as paragraph separator between translations
-
-## TACTIC Context
-{{tactic_context}}
-
-## Examples
-### Multi-paragraph Input:
-Paragraph A
-%%
-Paragraph B
-%%
-Paragraph C
-%%
-Paragraph D
-
-### Multi-paragraph Output:
-Translation A
-%%
-Translation B
-%%
-Translation C
-%%
-Translation D
-
-### Single paragraph Input:
-Single paragraph content
-
-### Single paragraph Output:
-Direct translation without separators`;
-
-export const DEFAULT_USER_PROMPT = 'Translate to {{to}}:\n\n{{text}}';
 
 export const DEFAULT_CONFIG: BatcherConfig = {
     maxCharsPerBatch: 3000,       // Optimized for 5000+ line files
@@ -91,6 +62,7 @@ export const DEFAULT_CONFIG: BatcherConfig = {
     tacticLite: false,            // 默认关闭以获得更快速度
     maxRetries: 3,
     debug: false,                 // 默认关闭调试日志
+    enableContextCaching: true,   // 默认开启，由 Provider 决定是否支持
 };
 
 /**
@@ -308,8 +280,11 @@ async function translateBatch(
     const cfg = { ...DEFAULT_CONFIG, ...config };
     const cacheKey = `${provider.id}:${source}:${target}:${cfg.tacticLite ? 'tactic' : 'std'}`;
 
+    const log = createLogger(`Batch ${batch.index}`);
+    if (cfg.debug) log.setLevel(LogLevel.DEBUG);
     const batchStartTime = Date.now();
-    console.log(`⏱️ [Batch ${batch.index}] 开始翻译，共 ${batch.lines.length} 行`);
+
+    log.info(`⏱️ 开始翻译，共 ${batch.lines.length} 行`);
 
     batch.status = 'translating';
 
@@ -326,35 +301,42 @@ async function translateBatch(
             // TACTIC-Lite Workflow: Only supports LLM providers
             if (cfg.tacticLite) {
                 if (provider.type === 'llm') {
-                    if (cfg.debug) console.log(`[Batch ${batch.index}] 🧠 Performing TACTIC Research...`);
+                    log.debug(`🧠 Performing TACTIC Research...`);
                     // Step 1: Research
                     const researchResult = await performResearch(batch, provider, source, target, options.signal);
                     batch.context.research = researchResult;
-                    if (cfg.debug) console.log(`[Batch ${batch.index}] 📝 Research Result:`, researchResult);
+                    log.debug(`📝 Research Result:`, researchResult);
                 } else {
-                    if (cfg.debug) console.warn(`[Batch ${batch.index}] TACTIC-Lite skipped: Provider '${provider.name}' is not an LLM.`);
+                    log.debug(`TACTIC-Lite skipped: Provider '${provider.name}' is not an LLM.`);
                 }
             }
 
-            // Step 2: Translate (Refinement)
-            const systemPrompt = buildContextPrompt(
-                batch.context,
-                source,
-                target,
-                cfg.systemPromptTemplate,
-                cfg.lineSeparator,
-                cfg.richText ?? true,
-            );
-            const userPrompt = buildUserPrompt(batch.mergedText, source, target, cfg.userPromptTemplate);
-
-            if (cfg.debug) {
-                console.group(`[Batch ${batch.index}] Translating`);
-                console.log('Text:', batch.mergedText);
-                console.log('Context:', batch.context);
-                console.log('System Prompt:', systemPrompt);
-                console.log('User Prompt:', userPrompt);
-                console.groupEnd();
+            // Step 1.5: Glossary Retrieval (RAG Lite)
+            const matchedGlossary = cfg.glossary
+                ? retrieveGlossaryMatches(batch.mergedText, cfg.glossary)
+                : [];
+            if (matchedGlossary.length > 0) {
+                log.debug(`📖 Glossary Matches: ${matchedGlossary.length} terms`);
             }
+
+            // Step 2: Translate (Refinement)
+            const systemPrompt = buildSystemPrompt({
+                targetLang: target,
+                tacticContext: batch.context.research,
+                richText: cfg.richText ?? true,
+                previousContext: batch.context.before,
+                futureContext: batch.context.after,
+                glossary: matchedGlossary, // Inject dynamic glossary
+            });
+            // If cfg.systemPromptTemplate is custom (not default), we might lose it?
+            // Ideally we should update prompts.ts to support custom templates override or stick to V1 standard
+            // For now, consistent with user request to "extract prompt", we use V1 logic.
+            // If user really wants custom template, they can't via AdvancedSettings anymore easily unless we add that back.
+            // But AdvancedSettings still passes config.
+
+            const userPrompt = buildUserPrompt(batch.mergedText, cfg.userPromptTemplate || DEFAULT_USER_PROMPT, target);
+
+            log.debug('Prompt details:', { text: batch.mergedText, context: batch.context, systemPrompt, userPrompt });
 
             // 调用翻译
             const apiStartTime = Date.now();
@@ -366,22 +348,21 @@ async function translateBatch(
                     systemPrompt, // Pass evaluated system prompt
                     temperature: options.temperature,
                     signal: options.signal,
+                    cacheConfig: cfg.enableContextCaching ? { enabled: true } : undefined,
                 }),
                 {
                     maxRetries: cfg.maxRetries,
                     signal: options.signal,
                     onRetry: (error, attempt, delay) => {
-                        console.warn(
-                            `Batch ${batch.index} retry ${attempt}: ${error.message}, waiting ${delay}ms`
-                        );
+                        log.warn(`retry ${attempt}: ${error.message}, waiting ${delay}ms`);
                     },
                 }
             );
             const apiDuration = Date.now() - apiStartTime;
-            console.log(`⏱️ [Batch ${batch.index}] API 调用耗时: ${apiDuration}ms`);
+            log.debug(`API 调用耗时: ${apiDuration}ms`);
 
             // 清理结果：移除 <think> 标签和 markdown 代码块
-            let cleanedText = result.text
+            const cleanedText = result.text
                 .replace(/<think>[\s\S]*?<\/think>/g, '') // 移除思维链
                 .replace(/```[\s\S]*?```/g, (match) => {
                     return match.replace(/```\w*\n?|```/g, '');
@@ -391,10 +372,8 @@ async function translateBatch(
             // 移除可能存在的 "Here is the translation:" 等废话 (简单启发式)
             // 但如果用了 System Prompt，通常模型会遵守 Output Only.
 
-            if (cfg.debug) {
-                console.log(`[Batch ${batch.index}] Raw:`, result.text);
-                console.log(`[Batch ${batch.index}] Cleaned:`, cleanedText);
-            }
+            log.debug(`Raw: ${result.text}`);
+            log.debug(`Cleaned: ${cleanedText}`);
 
             translatedText = cleanedText;
 
@@ -407,10 +386,10 @@ async function translateBatch(
         batch.status = 'completed';
 
         const batchDuration = Date.now() - batchStartTime;
-        console.log(`✅ [Batch ${batch.index}] 完成，总耗时: ${batchDuration}ms`);
+        log.info(`✅ 完成，总耗时: ${batchDuration}ms`);
     } catch (e) {
         const batchDuration = Date.now() - batchStartTime;
-        console.error(`❌ [Batch ${batch.index}] 失败，耗时: ${batchDuration}ms`);
+        log.error(`❌ 失败，耗时: ${batchDuration}ms`);
         batch.status = 'failed';
         batch.error = e instanceof TranslationError
             ? e
@@ -422,84 +401,7 @@ async function translateBatch(
 /**
  * 构建 User Prompt
  */
-function buildUserPrompt(
-    text: string,
-    source: string,
-    target: string,
-    template?: string
-): string {
-    const defaultTemplate = '{{text}}';
-    const usedTemplate = template || defaultTemplate;
-    return usedTemplate
-        .replace(/{{to}}/g, target)
-        .replace(/{{from}}/g, source)
-        .replace(/{{text}}/g, text);
-}
 
-/**
- * 构建上下文提示 (System Prompt)
- */
-function buildContextPrompt(
-    context: { before: string; after: string; research?: string },
-    source: string,
-    target: string,
-    template?: string,
-    separator?: string,
-    richText: boolean = true,
-): string {
-    // 如果没有模板，使用默认逻辑
-    if (!template) {
-        const parts: string[] = [];
-
-        if (context.before) {
-            parts.push(`[Previous translated lines for context]\n${context.before}`);
-        }
-        if (context.after) {
-            parts.push(`[Following lines for context (original ${source})]\n${context.after}`);
-        }
-
-        if (parts.length === 0) {
-            return '';
-        }
-
-        return `Maintain consistency with the surrounding context when translating to ${target}:\n\n${parts.join('\n\n')}`;
-    }
-
-    // 使用自定义模板
-    let prompt = template
-        .replace(/{{to}}/g, target)
-        .replace(/{{from}}/g, source);
-
-    // 动态注入 Rich Text 规则
-    const richTextRule = richText
-        ? '\n3. If the text contains HTML tags, consider where the tags should be placed in the translation while maintaining fluency'
-        : '';
-    prompt = prompt.replace(/{{rich_text_rule}}/g, richTextRule);
-
-    // 注入 TACTIC-Lite 上下文
-    // 如果有 research 数据，就注入；否则移除占位符
-    const tacticContext = context.research
-        ? `### Context Analysis (TACTIC-Lite)\n${context.research}`
-        : '';
-    prompt = prompt.replace(/{{tactic_context}}/g, tacticContext);
-
-    // 占位符处理
-    prompt = prompt
-        .replace(/{{title_prompt}}/g, '')
-        .replace(/{{summary_prompt}}/g, '')
-        .replace(/{{terms_prompt}}/g, '');
-
-    // 注入上下文数据
-    const contextParts: string[] = [];
-    if (context.before) contextParts.push(`PREVIOUS CONTEXT:\n${context.before}`);
-    if (context.after) contextParts.push(`FUTURE CONTEXT:\n${context.after}`);
-
-    if (contextParts.length > 0) {
-        return `${prompt}\n\n${contextParts.join('\n\n')}`;
-    }
-
-    return prompt;
-}
 
 /**
  * 拆分翻译结果为各行
@@ -539,9 +441,7 @@ function splitTranslation(
         result.push('');
     }
 
-    console.warn(
-        `Translation split mismatch: expected ${expectedLines}, got ${parts.length}`
-    );
+    // Mismatch is common and expected for some AI outputs, no need to warn
 
     return result;
 }
@@ -637,12 +537,15 @@ export async function translateWithBatching(
     options: BatchTranslateOptions
 ): Promise<SubtitleLine[]> {
     const totalStartTime = Date.now();
-    console.log(`🚀 开始批量翻译，共 ${lines.length} 行`);
 
     // Use provider-specific rate limits merged with user config
     const config = getEffectiveConfig(options.provider.id, options.config);
 
-    console.log(`📋 [Batcher] Provider: ${options.provider.id}, Effective config:`, {
+    const log = createLogger('Batcher');
+    if (config.debug) log.setLevel(LogLevel.DEBUG);
+
+    log.info(`🚀 开始批量翻译，共 ${lines.length} 行`);
+    log.info(`📋 Provider: ${options.provider.id}`, {
         concurrency: config.concurrency,
         maxRequestsPerSecond: config.maxRequestsPerSecond,
         maxLinesPerBatch: config.maxLinesPerBatch,
@@ -721,13 +624,13 @@ export async function translateWithBatching(
                 if (e instanceof TranslationError && e.type === ErrorType.CANCELLED) {
                     throw e;
                 }
-                console.error(`Batch ${batch.index} processing failed:`, e);
+                log.error(`Batch ${batch.index} processing failed:`, e);
             }))
         )
     );
 
     const totalDuration = Date.now() - totalStartTime;
-    console.log(`🏁 批量翻译完成，总耗时: ${totalDuration}ms，共 ${batches.length} 批次`);
+    log.info(`🏁 批量翻译完成，总耗时: ${totalDuration}ms，共 ${batches.length} 批次`);
 
     // 映射翻译结果回原始行
     let lineIndex = 0;

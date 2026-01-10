@@ -4,7 +4,7 @@
  */
 
 import type { Provider, BatchOptions, TranslationProgress, Subtitle, SubtitleLine } from '../types';
-import { translateWithBatching, type BatcherConfig } from './batcher';
+import { translateWithBatching, type BatcherConfig, type TranslationBatch } from './batcher';
 import { TranslationError, ErrorType } from './errors';
 
 // ============================================================================
@@ -18,6 +18,7 @@ export interface TranslateOptions {
     options: BatchOptions;
     batcherConfig?: Partial<BatcherConfig>;
     onProgress?: (progress: TranslationProgress) => void;
+    onBatchComplete?: (batch: TranslationBatch) => void;
     signal?: AbortSignal;
     temperature?: number;
     subtitleMode?: 'translate_only' | 'bilingual';
@@ -52,6 +53,7 @@ export async function translateSubtitle(
         temperature: opts.temperature,
         subtitleMode: opts.subtitleMode,
         onProgress,
+        onBatchComplete: opts.onBatchComplete,
         signal,
     });
 

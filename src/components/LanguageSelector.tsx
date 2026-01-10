@@ -7,8 +7,10 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
+import { useTranslation } from '@/lib/i18n/context';
+
 const COMMON_LANGUAGES = [
-    { code: 'auto', name: '自动检测' },
+    { code: 'auto', name: 'settings.autoDetect', isKey: true },
     { code: 'zh', name: '中文' },
     { code: 'en', name: 'English' },
     { code: 'ja', name: '日本語' },
@@ -32,7 +34,14 @@ interface LanguageSelectorProps {
 }
 
 export function LanguageSelector({ label, value, onChange, showAuto = false }: LanguageSelectorProps) {
-    const languages = showAuto ? COMMON_LANGUAGES : COMMON_LANGUAGES.filter((l) => l.code !== 'auto');
+    const { t } = useTranslation();
+
+    const languages = COMMON_LANGUAGES
+        .filter((l) => showAuto || l.code !== 'auto')
+        .map(l => ({
+            code: l.code,
+            name: l.isKey ? t(l.name) : l.name
+        }));
 
     return (
         <div className="space-y-2">

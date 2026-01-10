@@ -12,15 +12,32 @@ import {
     DEFAULT_USER_PROMPT,
     DEFAULT_CONFIG
 } from '@/lib/engine/batcher';
+import { useTranslation } from '@/lib/i18n/context';
 
 interface AdvancedSettingsProps {
     config: Partial<BatcherConfig>;
     onConfigChange: (config: Partial<BatcherConfig>) => void;
     temperature: number;
     onTemperatureChange: (temp: number) => void;
+    qualityEvalEnabled?: boolean;
+    onQualityEvalChange?: (enabled: boolean) => void;
+    debugMode?: boolean;
+    glossaryText?: string;
+    onGlossaryTextChange?: (text: string) => void;
 }
 
-export function AdvancedSettings({ config, onConfigChange, temperature, onTemperatureChange }: AdvancedSettingsProps) {
+export function AdvancedSettings({
+    config,
+    onConfigChange,
+    temperature,
+    onTemperatureChange,
+    qualityEvalEnabled = false,
+    onQualityEvalChange,
+    debugMode = false,
+    glossaryText = '',
+    onGlossaryTextChange,
+}: AdvancedSettingsProps) {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
 
     const handleChange = (field: keyof BatcherConfig, value: unknown) => {
@@ -48,7 +65,7 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
             >
                 <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold flex items-center gap-2 text-yellow-500 dark:text-yellow-400">
-                        展开更多自定义选项 <span className="text-xl">👉</span>
+                        {t('common.expandOptions')} <span className="text-xl">👉</span>
                     </h2>
                 </div>
                 {isExpanded ? (
@@ -66,11 +83,11 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    每秒最大请求数
+                                    {t('advanced.maxRequests')}
                                     <Info className="h-3 w-3 text-muted-foreground" />
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    请求数超过该限制时会进入排队状态，直到下一秒钟开始。
+                                    {t('advanced.maxRequestsDesc')}
                                 </p>
                             </div>
                             <Input
@@ -84,10 +101,10 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    每次请求最大文本长度
+                                    {t('advanced.maxChars')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    每次请求最大字符数，太大会导致接口的响应变慢，因此可以尝试调整该选项来优化速度
+                                    {t('advanced.maxCharsDesc')}
                                 </p>
                             </div>
                             <Input
@@ -101,10 +118,10 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    每次请求最大段落数
+                                    {t('advanced.maxLines')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    每次发送给翻译服务的段落数量，如果段落数量过多，可能会导致接口的响应变慢
+                                    {t('advanced.maxLinesDesc')}
                                 </p>
                             </div>
                             <Input
@@ -118,10 +135,10 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    启用富文本翻译
+                                    {t('advanced.richText')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    开启富文本翻译可保留原文的链接和样式效果 (HTML 标签处理)
+                                    {t('advanced.richTextDesc')}
                                 </p>
                             </div>
                             <Switch
@@ -133,10 +150,10 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    <span role="img" aria-label="brain">🧠</span> TACTIC-Lite (高精度模式)
+                                    <span role="img" aria-label="brain">🧠</span> {t('advanced.tacticLite')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    开启后通过"思考-翻译"双步流程增强语境理解。能显著提升质量，但会消耗 2 倍 API 额度。
+                                    {t('advanced.tacticLiteDesc')}
                                 </p>
                             </div>
                             <Switch
@@ -144,49 +161,84 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                                 onCheckedChange={(checked) => handleChange('tacticLite', checked)}
                             />
                         </div>
-                    </div>
 
-                    {/* Section 2: Prompts */}
-                    <div className="space-y-6 pt-6 border-t border-border">
-                        <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                                System Prompt:
-                                <Info className="h-3 w-3 text-muted-foreground" />
-                            </Label>
-                            <Textarea
-                                value={config.systemPromptTemplate ?? SYSTEM_PROMPT}
-                                onChange={(e) => handleChange('systemPromptTemplate', e.target.value)}
-                                className="min-h-[200px] font-mono text-xs bg-background"
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <Label className="flex items-center gap-2">
+                                    <span role="img" aria-label="magnifier">🔍</span> {t('advanced.qualityEval')}
+                                </Label>
+                                <p className="text-xs text-muted-foreground max-w-lg">
+                                    {t('advanced.qualityEvalDesc')}
+                                </p>
+                            </div>
+                            <Switch
+                                checked={qualityEvalEnabled}
+                                onCheckedChange={(checked) => onQualityEvalChange?.(checked)}
                             />
                         </div>
+                    </div>
 
-                        {/* Subtitle Prompt (User Prompt Template) */}
-                        <div className="space-y-2">
+                    {/* Section: Glossary (RAG) */}
+                    <div className="flex flex-col gap-4 pt-4 border-t border-dashed border-border/50">
+                        <div className="space-y-1">
                             <Label className="flex items-center gap-2">
-                                Subtitle Prompt:
-                                <Info className="h-3 w-3 text-muted-foreground" />
+                                <span role="img" aria-label="book">📖</span> {t('advanced.glossary')}
                             </Label>
-                            <Textarea
-                                rows={3}
-                                value={config.userPromptTemplate ?? DEFAULT_USER_PROMPT}
-                                onChange={(e) => handleChange('userPromptTemplate', e.target.value)}
-                                className="font-mono text-xs bg-background"
-                            />
                             <p className="text-xs text-muted-foreground">
-                                控制用户消息格式。变量: <code>{`{{to}}`}</code>, <code>{`{{from}}`}</code>, <code>{`{{text}}`}</code>
+                                {t('advanced.glossaryDesc')}
                             </p>
                         </div>
+                        <Textarea
+                            value={glossaryText}
+                            onChange={(e) => onGlossaryTextChange?.(e.target.value)}
+                            placeholder={t('advanced.glossaryPlaceholder')}
+                            className="min-h-[100px] font-mono text-xs bg-background"
+                        />
                     </div>
+
+                    {/* Section 2: Prompts (Debug Mode Only) */}
+                    {debugMode && (
+                        <div className="space-y-6 pt-6 border-t border-border">
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    {t('advanced.systemPrompt')}
+                                    <Info className="h-3 w-3 text-muted-foreground" />
+                                </Label>
+                                <Textarea
+                                    value={config.systemPromptTemplate ?? SYSTEM_PROMPT}
+                                    onChange={(e) => handleChange('systemPromptTemplate', e.target.value)}
+                                    className="min-h-[200px] font-mono text-xs bg-background"
+                                />
+                            </div>
+
+                            {/* Subtitle Prompt (User Prompt Template) */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    {t('advanced.subtitlePrompt')}
+                                    <Info className="h-3 w-3 text-muted-foreground" />
+                                </Label>
+                                <Textarea
+                                    rows={3}
+                                    value={config.userPromptTemplate ?? DEFAULT_USER_PROMPT}
+                                    onChange={(e) => handleChange('userPromptTemplate', e.target.value)}
+                                    className="font-mono text-xs bg-background"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t('advanced.subtitlePromptDesc')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Section 3: Temperature */}
                     <div className="space-y-6 pt-6 border-t border-border">
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div className="space-y-1">
                                 <Label className="flex items-center gap-2">
-                                    Temperature:
+                                    {t('advanced.temperature')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground max-w-lg">
-                                    采样发散度，值越小，生成的内容越固定。当取0时，模型生成时几乎总是会选取概率最大的Token（词元）
+                                    {t('advanced.temperatureDesc')}
                                 </p>
                             </div>
                             <div className="flex items-center gap-4 w-full md:w-auto">
@@ -201,17 +253,17 @@ export function AdvancedSettings({ config, onConfigChange, temperature, onTemper
                                 <span className="w-8 text-center font-mono text-sm">{temperature}</span>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="pt-4 flex justify-end">
-                        <Button
-                            variant="link"
-                            className="text-muted-foreground hover:text-foreground text-sm"
-                            onClick={handleReset}
-                        >
-                            恢复为默认设置
-                        </Button>
+                        {/* Footer */}
+                        <div className="pt-4 flex justify-end">
+                            <Button
+                                variant="link"
+                                className="text-muted-foreground hover:text-foreground text-sm"
+                                onClick={handleReset}
+                            >
+                                {t('common.restoreDefaults')}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}

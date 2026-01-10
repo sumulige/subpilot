@@ -12,22 +12,35 @@ This is a **Next.js 16** application that translates subtitle files (SRT, VTT, A
 - **UI**: React 19, Tailwind CSS v4, Radix UI
 - **AI**: Vercel AI SDK (`ai`, `@ai-sdk/openai-compatible`)
 - **Cache**: IndexedDB (via `idb`)
+- **Virtual Scroll**: @tanstack/react-virtual
 
 ## Key Architecture
 
 ```
 src/
-├── app/page.tsx          # Main UI (single page)
-├── app/api/translate/    # Unified API proxy
+├── app/page.tsx              # Main UI (single page)
+├── app/api/
+│   ├── translate/            # Unified translation API proxy
+│   └── models/               # Dynamic model list API
 ├── lib/engine/
-│   ├── batcher.ts        # Core: Smart batching + concurrency
-│   ├── cache.ts          # IndexedDB caching
-│   └── translator.ts     # High-level orchestrator
-├── lib/providers/        # AI provider adapters
-│   ├── registry.ts       # Provider registry
-│   ├── doubao.ts         # VolcEngine (Doubao)
-│   └── ...
-└── lib/parsers/          # Subtitle format parsers
+│   ├── batcher.ts            # Core: Smart batching + concurrency
+│   ├── translator.ts         # High-level orchestrator
+│   ├── glossary.ts           # Glossary/term management
+│   ├── prompts.ts            # Prompt templates
+│   ├── translation-session.ts # Session recovery
+│   └── cache.ts              # IndexedDB caching
+├── lib/providers/            # AI provider adapters
+│   ├── registry.ts           # Provider registry
+│   ├── model-fetcher.ts      # Dynamic model fetching
+│   └── *.ts                  # Provider implementations
+├── lib/i18n/                 # Internationalization (EN/ZH)
+│   ├── context.tsx           # i18n React context
+│   └── dictionaries.ts       # Translation strings
+├── lib/parsers/              # Subtitle format parsers
+└── components/
+    ├── VirtualTranslationList.tsx  # Virtual scroll preview
+    ├── SessionRecoveryDialog.tsx   # Resume translation
+    └── LanguageSwitcher.tsx        # EN/ZH toggle
 ```
 
 ## Critical Files
@@ -37,6 +50,7 @@ src/
 | `src/lib/engine/batcher.ts` | Smart batching, concurrency control, context injection |
 | `src/lib/providers/*.ts` | AI provider implementations |
 | `src/app/api/translate/route.ts` | API proxy for AI calls |
+| `src/lib/i18n/context.tsx` | Internationalization context |
 
 ## Code Conventions
 
@@ -57,6 +71,11 @@ src/
 ### Adjusting Translation Performance
 - Modify `maxConcurrency` and `recommendedBatchSize` in provider's `rateLimit` config
 - Smaller batches + higher concurrency = faster (for high-RPM APIs)
+
+### Adding i18n Strings
+1. Add key-value pairs to `src/lib/i18n/dictionaries.ts` (both `en` and `zh`)
+2. Use `const { t } = useTranslation()` in component
+3. Call `t('path.to.key')` with optional params
 
 ### Debugging Translation Issues
 - Enable `debug: true` in `BatcherConfig`
@@ -93,3 +112,4 @@ npm start         # Start production server
 | `DEPLOYMENT.md` | Deployment guide (Vercel, Docker, VPS) |
 | `README.md` | User-facing bilingual guide |
 | `.claude/skills/` | Domain knowledge for AI maintenance |
+
