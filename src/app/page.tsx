@@ -298,7 +298,16 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-8 text-sm text-muted-foreground">
-          © 2026 SubPilot • by{' '}
+          © 2026{' '}
+          <a
+            href="https://github.com/sumulige/subpilot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            SubPilot
+          </a>
+          {' '}• by{' '}
           <a
             href="https://gengnuo-1257145452.cos.ap-beijing.myqcloud.com/uPic/2024-11-21/14:10:19-InQEtF.png"
             target="_blank"

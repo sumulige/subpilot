@@ -77,3 +77,19 @@ npm run dev       # Start dev server (Turbopack)
 npm run build     # Production build
 npm start         # Start production server
 ```
+
+## Deployment
+
+- **Production URL**: https://subpilot.sumulige.com
+- **Platform**: Vercel (auto-deploy on push to main)
+- **GitHub Actions**: `.github/workflows/ci.yml` (lint + test), `.github/workflows/deploy.yml` (Vercel deploy)
+
+## Documentation
+
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` | Project memory for AI (this file) |
+| `ARCHITECTURE.md` | Core logic explanation |
+| `DEPLOYMENT.md` | Deployment guide (Vercel, Docker, VPS) |
+| `README.md` | User-facing bilingual guide |
+| `.claude/skills/` | Domain knowledge for AI maintenance |
