@@ -508,8 +508,8 @@ export default function Home() {
             </div>
 
             {/* Right Panel - Live Preview */}
-            <div className="glass-strong rounded-xl p-5 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
+            <div className="glass-strong rounded-xl p-5 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-sm font-medium text-muted-foreground">
                   📝 {t('status.livePreview')} {currentProgress?.fileName ? `- ${currentProgress.fileName}` : ''}
                 </h2>
@@ -525,7 +525,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex-1" style={{ minHeight: 'calc(100vh - 320px)' }}>
+              <div className="flex-1 flex flex-col justify-end overflow-hidden" style={{ minHeight: 'calc(100vh - 320px)' }}>
                 <VirtualTranslationList
                   lines={liveLines}
                   height={Math.max(400, typeof window !== 'undefined' ? window.innerHeight - 350 : 500)}
