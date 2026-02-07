@@ -25,11 +25,11 @@ declare module 'react-window' {
     }
 
     export const List: ComponentType<ListProps & { ref?: Ref<ListHandle> }>;
-    export const Grid: ComponentType<any>;
+    export const Grid: ComponentType<Record<string, unknown>>;
     export function getScrollbarSize(): number;
     export function useListRef(): Ref<ListHandle>;
-    export function useDynamicRowHeight(): any;
-    export function useGridRef(): any;
-    export function useListCallbackRef(): any;
-    export function useGridCallbackRef(): any;
+    export function useDynamicRowHeight(): unknown;
+    export function useGridRef(): Ref<unknown>;
+    export function useListCallbackRef(): unknown;
+    export function useGridCallbackRef(): unknown;
 }

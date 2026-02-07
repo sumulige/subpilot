@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { dictionaries, Locale } from './dictionaries';
 
 // Type inference for nested keys is hard, so we just use the structure of 'zh' as the base
@@ -34,9 +34,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
     const t = (path: string, params?: Record<string, string | number>) => {
         const keys = path.split('.');
-        let value: any = dict;
+        let value: unknown = dict as unknown;
         for (const k of keys) {
-            value = value?.[k];
+            if (typeof value !== 'object' || value === null) {
+                value = undefined;
+                break;
+            }
+            value = (value as Record<string, unknown>)[k];
         }
         if (typeof value !== 'string') return path;
 

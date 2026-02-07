@@ -5,7 +5,7 @@
  * 拖拽或点击上传字幕文件
  */
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { detectFormat } from '@/lib/parsers';
@@ -24,17 +24,17 @@ export function FileUploader({ onFilesSelected, accept = '.srt,.vtt,.ass,.ssa,.l
     const [files, setFiles] = useState<File[]>([]);
     const [error, setError] = useState<string | null>(null);
 
-    const handleDragOver = useCallback((e: React.DragEvent) => {
+    const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(true);
-    }, []);
+    };
 
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const handleDragLeave = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-    }, []);
+    };
 
-    const processFiles = useCallback((selectedFiles: File[]) => {
+    const processFiles = (selectedFiles: File[]) => {
         setError(null);
 
         // Filter valid subtitle files
@@ -61,24 +61,24 @@ export function FileUploader({ onFilesSelected, accept = '.srt,.vtt,.ass,.ssa,.l
 
         setFiles(mergedFiles);
         onFilesSelected(mergedFiles);
-    }, [onFilesSelected, files]);
+    };
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
         processFiles(Array.from(e.dataTransfer.files));
-    }, [processFiles]);
+    };
 
-    const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         processFiles(Array.from(e.target.files || []));
-    }, [processFiles]);
+    };
 
-    const removeFile = useCallback((index: number) => {
+    const removeFile = (index: number) => {
         const newFiles = files.filter((_, i) => i !== index);
         setFiles(newFiles);
         setError(null);
         onFilesSelected(newFiles);
-    }, [files, onFilesSelected]);
+    };
 
     const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return `${bytes} B`;
