@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, RefreshCw, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { BatcherConfig } from '@/lib/engine/batcher';
 
 interface SettingsDialogProps {
@@ -63,22 +63,24 @@ export function SettingsDialog({ config, onConfigChange }: SettingsDialogProps) 
     const [localConfig, setLocalConfig] = useState(config);
     const [open, setOpen] = useState(false);
 
-    // Sync when config prop changes
-    useEffect(() => {
-        setLocalConfig(config);
-    }, [config, open]);
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+            setLocalConfig(config);
+        }
+    };
 
     const handleSave = () => {
         onConfigChange(localConfig);
         setOpen(false);
     };
 
-    const handleChange = (field: keyof BatcherConfig, value: any) => {
-        setLocalConfig(prev => ({ ...prev, [field]: value }));
+    const handleChange = <K extends keyof BatcherConfig>(field: K, value: BatcherConfig[K]) => {
+        setLocalConfig((prev) => ({ ...prev, [field]: value } as Partial<BatcherConfig>));
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="icon">
                     <Settings className="h-4 w-4" />
@@ -174,7 +176,7 @@ export function SettingsDialog({ config, onConfigChange }: SettingsDialogProps) 
                             <div className="text-xs text-muted-foreground space-y-1">
                                 <p>可用变量:</p>
                                 <ul className="list-disc pl-4 space-y-0.5">
-                                    <li><code>{`{{to}}`}</code> - 目标语言 (例如 "Simplified Chinese")</li>
+                                    <li><code>{`{{to}}`}</code> - 目标语言 (例如 &quot;Simplified Chinese&quot;)</li>
                                     <li><code>{`{{from}}`}</code> - 源语言</li>
                                 </ul>
                                 <p className="mt-2 text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
