@@ -3,7 +3,7 @@
  * 批量翻译引擎（重构版）
  */
 
-import type { Provider, BatchOptions, TranslationProgress, Subtitle, SubtitleLine } from '../types';
+import type { Provider, BatchOptions, TranslationProgress, Subtitle } from '../types';
 import { translateWithBatching, type BatcherConfig, type TranslationBatch } from './batcher';
 import { TranslationError, ErrorType } from './errors';
 

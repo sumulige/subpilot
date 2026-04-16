@@ -77,7 +77,7 @@ export function getEffectiveConfig(
 
     // Filter out undefined values from userConfig
     const cleanUserConfig = Object.fromEntries(
-        Object.entries(userConfig).filter(([_, v]) => v !== undefined)
+        Object.entries(userConfig).filter(([, v]) => v !== undefined)
     );
 
     // Provider limits override defaults, user config overrides provider limits

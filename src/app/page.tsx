@@ -5,7 +5,7 @@
  * Dark glass theme with split-panel layout and real-time preview
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +35,6 @@ import {
   createSession,
   saveSession,
   addCompletedBatch,
-  updateFileProgress,
   filesToStoredFiles,
 } from '@/lib/engine/translation-session';
 import type { ProviderConfig, Subtitle } from '@/lib/types';
@@ -56,7 +55,10 @@ export default function Home() {
   const [providerId, setProviderId] = useLocalStorage('providerId', 'nvidia');
   const [providerConfigs, setProviderConfigs] = useLocalStorage<Record<string, ProviderConfig>>('providerConfigs', {});
 
-  const providerConfig = providerConfigs[providerId] || {};
+  const providerConfig = useMemo(
+    () => providerConfigs[providerId] || {},
+    [providerConfigs, providerId]
+  );
   const setProviderConfig = useCallback((config: ProviderConfig) => {
     setProviderConfigs((prev) => ({ ...prev, [providerId]: config }));
   }, [providerId, setProviderConfigs]);
@@ -225,7 +227,7 @@ export default function Home() {
     } finally {
       setIsTranslating(false);
     }
-  }, [subtitles, files, providerId, providerConfig, sourceLanguage, targetLanguage, debugMode, batcherConfig, temperature, subtitleMode]);
+  }, [subtitles, files, providerId, providerConfig, sourceLanguage, targetLanguage, debugMode, batcherConfig, glossaryText, temperature, subtitleMode]);
 
   // Download results
   const handleDownload = useCallback(() => {

@@ -33,6 +33,7 @@ export function VirtualTranslationList({
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editValue, setEditValue] = useState('');
 
+    // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual requires useVirtualizer and row measurement refs for dynamic-height items.
     const virtualizer = useVirtualizer({
         count: lines.length,
         getScrollElement: () => parentRef.current,
@@ -122,12 +123,14 @@ export function VirtualTranslationList({
                         return (
                             <div
                                 key={virtualItem.key}
+                                data-index={index}
+                                ref={virtualizer.measureElement}
                                 style={{
                                     position: 'absolute',
                                     top: 0,
                                     left: 0,
                                     width: '100%',
-                                    height: `${virtualItem.size}px`,
+                                    minHeight: `${virtualItem.size}px`,
                                     transform: `translateY(${virtualItem.start}px)`,
                                 }}
                                 className={`px-3 py-2 border-b border-white/5 ${isLatest ? 'bg-indigo-500/10' : ''

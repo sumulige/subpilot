@@ -33,7 +33,7 @@ export function parseGlossary(input: string): GlossaryItem[] {
                 })).filter(i => i.term && i.translation);
             }
         }
-    } catch (_e) {
+    } catch {
         // Ignore JSON error, try text
     }
 
