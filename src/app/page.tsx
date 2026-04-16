@@ -527,7 +527,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex-1 flex flex-col justify-end overflow-hidden" style={{ minHeight: 'calc(100vh - 320px)' }}>
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <VirtualTranslationList
                   lines={liveLines}
                   height={Math.max(400, typeof window !== 'undefined' ? window.innerHeight - 350 : 500)}
