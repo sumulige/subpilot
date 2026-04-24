@@ -527,10 +527,10 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-[400px] overflow-hidden">
                 <VirtualTranslationList
                   lines={liveLines}
-                  height={Math.max(400, typeof window !== 'undefined' ? window.innerHeight - 350 : 500)}
+                  height="100%"
                   isTranslating={isTranslating}
                   onEditLine={(index, newTranslation) => {
                     // Find which batch and position this line belongs to

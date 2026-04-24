@@ -17,7 +17,7 @@ interface TranslationLine {
 
 interface VirtualTranslationListProps {
     lines: TranslationLine[];
-    height?: number;
+    height?: number | string;
     onEditLine?: (index: number, newTranslation: string) => void;
     isTranslating?: boolean;
 }
@@ -32,6 +32,7 @@ export function VirtualTranslationList({
     const parentRef = useRef<HTMLDivElement>(null);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editValue, setEditValue] = useState('');
+    const resolvedHeight = typeof height === 'number' ? `${height}px` : height;
 
     // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual requires useVirtualizer and row measurement refs for dynamic-height items.
     const virtualizer = useVirtualizer({
@@ -47,6 +48,27 @@ export function VirtualTranslationList({
             virtualizer.scrollToIndex(lines.length - 1, { align: 'end' });
         }
     }, [lines.length, isTranslating, virtualizer]);
+
+    useEffect(() => {
+        virtualizer.measure();
+    }, [lines.length, virtualizer]);
+
+    useEffect(() => {
+        const parent = parentRef.current;
+        if (!parent) return;
+
+        const syncScrollBounds = () => {
+            const maxScrollTop = Math.max(0, parent.scrollHeight - parent.clientHeight);
+            if (parent.scrollTop > maxScrollTop) {
+                parent.scrollTop = maxScrollTop;
+            }
+        };
+
+        syncScrollBounds();
+        const frameId = window.requestAnimationFrame(syncScrollBounds);
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [lines.length, resolvedHeight]);
 
     const handleStartEdit = useCallback((index: number, currentValue: string) => {
         setEditingIndex(index);
@@ -83,7 +105,7 @@ export function VirtualTranslationList({
 
     if (lines.length === 0) {
         return (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm" style={{ height }}>
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground" style={{ height: resolvedHeight }}>
                 <div className="text-center">
                     <div className="text-4xl mb-3 opacity-50">📄</div>
                     <p>{t('common.uploadAndStart')}</p>
@@ -96,7 +118,7 @@ export function VirtualTranslationList({
     const virtualItems = virtualizer.getVirtualItems();
 
     return (
-        <div className="relative">
+        <div className="relative h-full min-h-0">
             {/* Line count indicator */}
             <div className="absolute top-0 right-2 text-xs text-muted-foreground z-10 bg-background/80 px-2 py-1 rounded">
                 {t('common.linesCount', { count: lines.length })}
@@ -105,7 +127,7 @@ export function VirtualTranslationList({
             <div
                 ref={parentRef}
                 className="overflow-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
-                style={{ height, maxHeight: height }}
+                style={{ height: resolvedHeight, maxHeight: resolvedHeight }}
             >
                 <div
                     style={{
