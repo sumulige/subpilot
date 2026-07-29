@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const deepinfraSchema: ProviderSchema = {
@@ -74,4 +75,19 @@ export function createDeepInfraProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(deepinfraSchema, createDeepInfraProvider);
+export const deepinfraDescriptor: ProviderDescriptor = {
+    schema: deepinfraSchema,
+    factory: createDeepInfraProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'deepinfra',
+        defaultBaseUrl: 'https://api.deepinfra.com/v1/openai',
+    },
+    modelsCatalog: {
+        baseUrl: 'https://api.deepinfra.com',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(deepinfraDescriptor);

@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const nvidiaSchema: ProviderSchema = {
@@ -79,4 +80,19 @@ export function createNvidiaProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(nvidiaSchema, createNvidiaProvider);
+export const nvidiaDescriptor: ProviderDescriptor = {
+    schema: nvidiaSchema,
+    factory: createNvidiaProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'nvidia',
+        defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
+    },
+    modelsCatalog: {
+        baseUrl: 'https://integrate.api.nvidia.com',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(nvidiaDescriptor);

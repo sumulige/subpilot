@@ -1,67 +1,101 @@
 /**
  * Provider Registry
- * 管理所有翻译服务 Provider
+ * 管理所有翻译服务 Provider（以 Descriptor 为唯一注册单元）
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, ProviderFactory } from '../types';
+import type { ProviderDescriptor } from './descriptor';
 
 interface RegistryEntry {
-    schema: ProviderSchema;
-    factory: ProviderFactory;
+  descriptor: ProviderDescriptor;
 }
 
 class ProviderRegistry {
-    private entries = new Map<string, RegistryEntry>();
-    private instances = new Map<string, Provider>();
+  private entries = new Map<string, RegistryEntry>();
+  private instances = new Map<string, Provider>();
 
-    /** 注册 Provider */
-    register(schema: ProviderSchema, factory: ProviderFactory): void {
-        this.entries.set(schema.id, { schema, factory });
-        this.instances.delete(schema.id);
+  /** 注册完整 Descriptor */
+  register(descriptor: ProviderDescriptor): void {
+    this.entries.set(descriptor.schema.id, { descriptor });
+    this.instances.delete(descriptor.schema.id);
+  }
+
+  /** 获取 Provider 实例 */
+  get(id: string, config: ProviderConfig): Provider {
+    const entry = this.entries.get(id);
+    if (!entry) throw new Error(`Unknown provider: ${id}`);
+
+    const cacheKey = `${id}:${JSON.stringify(config)}`;
+    let instance = this.instances.get(cacheKey);
+    if (!instance) {
+      instance = entry.descriptor.factory(config);
+      this.instances.set(cacheKey, instance);
     }
+    return instance;
+  }
 
-    /** 获取 Provider 实例 */
-    get(id: string, config: ProviderConfig): Provider {
-        const entry = this.entries.get(id);
-        if (!entry) throw new Error(`Unknown provider: ${id}`);
+  getDescriptor(id: string): ProviderDescriptor | undefined {
+    return this.entries.get(id)?.descriptor;
+  }
 
-        const cacheKey = `${id}:${JSON.stringify(config)}`;
-        let instance = this.instances.get(cacheKey);
-        if (!instance) {
-            instance = entry.factory(config);
-            this.instances.set(cacheKey, instance);
-        }
-        return instance;
-    }
+  getSchema(id: string): ProviderSchema | undefined {
+    return this.entries.get(id)?.descriptor.schema;
+  }
 
-    /** 获取 Schema */
-    getSchema(id: string): ProviderSchema | undefined {
-        return this.entries.get(id)?.schema;
-    }
+  list(): ProviderSchema[] {
+    return Array.from(this.entries.values()).map((e) => e.descriptor.schema);
+  }
 
-    /** 列出所有 Schema */
-    list(): ProviderSchema[] {
-        return Array.from(this.entries.values()).map((e) => e.schema);
-    }
+  listDescriptors(): ProviderDescriptor[] {
+    return Array.from(this.entries.values()).map((e) => e.descriptor);
+  }
 
-    /** 按类型筛选 */
-    listByType(type: 'api' | 'llm'): ProviderSchema[] {
-        return this.list().filter((s) => s.type === type);
-    }
+  listByType(type: 'api' | 'llm'): ProviderSchema[] {
+    return this.list().filter((s) => s.type === type);
+  }
 
-    /** 检查是否存在 */
-    has(id: string): boolean {
-        return this.entries.has(id);
-    }
+  has(id: string): boolean {
+    return this.entries.has(id);
+  }
 
-    /** 清除实例缓存 */
-    clearCache(): void {
-        this.instances.clear();
-    }
+  /** 是否支持 /api/models 动态拉取 */
+  supportsModelFetch(id: string): boolean {
+    return !!this.entries.get(id)?.descriptor.modelsCatalog;
+  }
+
+  clearCache(): void {
+    this.instances.clear();
+  }
 }
 
 export const registry = new ProviderRegistry();
 
-export function registerProvider(schema: ProviderSchema, factory: ProviderFactory): void {
-    registry.register(schema, factory);
+/** 注册 Descriptor（推荐） */
+export function registerDescriptor(descriptor: ProviderDescriptor): void {
+  registry.register(descriptor);
+}
+
+/**
+ * 兼容旧签名：registerProvider(schema, factory)
+ * 或 registerProvider(descriptor)
+ */
+export function registerProvider(
+  schemaOrDescriptor: ProviderSchema | ProviderDescriptor,
+  factory?: ProviderFactory
+): void {
+  if (
+    typeof schemaOrDescriptor === 'object' &&
+    'schema' in schemaOrDescriptor &&
+    'factory' in schemaOrDescriptor
+  ) {
+    registry.register(schemaOrDescriptor as ProviderDescriptor);
+    return;
+  }
+  if (!factory) {
+    throw new Error('registerProvider(schema, factory) requires factory');
+  }
+  registry.register({
+    schema: schemaOrDescriptor as ProviderSchema,
+    factory,
+  });
 }

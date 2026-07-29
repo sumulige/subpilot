@@ -4,7 +4,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const customLLMSchema: ProviderSchema = {
@@ -68,4 +69,14 @@ export function createCustomProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(customLLMSchema, createCustomProvider);
+export const customDescriptor: ProviderDescriptor = {
+    schema: customLLMSchema,
+    factory: createCustomProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'custom',
+        // baseUrl 必填，无 default
+    },
+};
+
+registerDescriptor(customDescriptor);

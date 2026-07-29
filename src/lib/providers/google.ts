@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const googleSchema: ProviderSchema = {
@@ -74,4 +75,10 @@ export function createGoogleProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(googleSchema, createGoogleProvider);
+export const googleDescriptor: ProviderDescriptor = {
+    schema: googleSchema,
+    factory: createGoogleProvider,
+    sdk: { kind: 'ai-sdk-google' },
+};
+
+registerDescriptor(googleDescriptor);

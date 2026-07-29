@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const deepseekSchema: ProviderSchema = {
@@ -74,4 +75,15 @@ export function createDeepSeekProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(deepseekSchema, createDeepSeekProvider);
+export const deepseekDescriptor: ProviderDescriptor = {
+    schema: deepseekSchema,
+    factory: createDeepSeekProvider,
+    sdk: { kind: 'ai-sdk-deepseek' },
+    modelsCatalog: {
+        baseUrl: 'https://api.deepseek.com',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(deepseekDescriptor);

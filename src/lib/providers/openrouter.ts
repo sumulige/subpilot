@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const openrouterSchema: ProviderSchema = {
@@ -74,4 +75,19 @@ export function createOpenRouterProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(openrouterSchema, createOpenRouterProvider);
+export const openrouterDescriptor: ProviderDescriptor = {
+    schema: openrouterSchema,
+    factory: createOpenRouterProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'openrouter',
+        defaultBaseUrl: 'https://openrouter.ai/api/v1',
+    },
+    modelsCatalog: {
+        baseUrl: 'https://openrouter.ai/api',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(openrouterDescriptor);

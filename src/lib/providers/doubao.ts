@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const doubaoSchema: ProviderSchema = {
@@ -83,4 +84,21 @@ export function createDoubaoProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(doubaoSchema, createDoubaoProvider);
+export const doubaoDescriptor: ProviderDescriptor = {
+    schema: doubaoSchema,
+    factory: createDoubaoProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'doubao',
+        defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+        normalizeBaseUrl: true,
+        contextCache: 'doubao-session',
+    },
+    modelsCatalog: {
+        baseUrl: 'https://ark.cn-beijing.volces.com',
+        modelsPath: '/api/v3/models',
+        responseParser: 'doubao',
+    },
+};
+
+registerDescriptor(doubaoDescriptor);

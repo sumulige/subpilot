@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const openaiSchema: ProviderSchema = {
@@ -78,4 +79,15 @@ export function createOpenAIProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(openaiSchema, createOpenAIProvider);
+export const openaiDescriptor: ProviderDescriptor = {
+    schema: openaiSchema,
+    factory: createOpenAIProvider,
+    sdk: { kind: 'ai-sdk-openai', defaultBaseUrl: 'https://api.openai.com/v1' },
+    modelsCatalog: {
+        baseUrl: 'https://api.openai.com',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(openaiDescriptor);

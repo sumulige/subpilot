@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { translate } from '../ai-client';
 
 export const tongyiSchema: ProviderSchema = {
@@ -82,4 +83,19 @@ export function createTongyiProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(tongyiSchema, createTongyiProvider);
+export const tongyiDescriptor: ProviderDescriptor = {
+    schema: tongyiSchema,
+    factory: createTongyiProvider,
+    sdk: {
+        kind: 'openai-compatible',
+        name: 'tongyi',
+        defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    },
+    modelsCatalog: {
+        baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode',
+        modelsPath: '/v1/models',
+        responseParser: 'openai',
+    },
+};
+
+registerDescriptor(tongyiDescriptor);

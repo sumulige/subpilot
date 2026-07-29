@@ -3,7 +3,8 @@
  */
 
 import type { Provider, ProviderSchema, ProviderConfig, TranslationRequest, TranslationResult } from '../types';
-import { registerProvider } from './registry';
+import { registerDescriptor } from './registry';
+import type { ProviderDescriptor } from './descriptor';
 import { TranslationError, ErrorType } from '../engine/errors';
 
 export const deeplSchema: ProviderSchema = {
@@ -64,4 +65,10 @@ export function createDeepLProvider(config: ProviderConfig): Provider {
     });
 }
 
-registerProvider(deeplSchema, createDeepLProvider);
+export const deeplDescriptor: ProviderDescriptor = {
+    schema: deeplSchema,
+    factory: createDeepLProvider,
+    // API 型：无 sdk / modelsCatalog
+};
+
+registerDescriptor(deeplDescriptor);
