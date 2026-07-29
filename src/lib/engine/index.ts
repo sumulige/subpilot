@@ -14,10 +14,13 @@ export {
 export {
     createBatches,
     translateWithBatching,
+    fillBatchContext,
     type BatcherConfig,
     type TranslationBatch,
     type BatchTranslateOptions,
 } from './batcher';
+export { splitTranslation } from './execute-batch';
+export { createLimiter, createRateLimiter } from './rate-limit';
 export { applyBatchesToSubtitle, countBatchLines } from './apply-batches';
 export {
     hashString,
