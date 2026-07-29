@@ -18,3 +18,10 @@ export {
     type TranslationBatch,
     type BatchTranslateOptions,
 } from './batcher';
+export { applyBatchesToSubtitle, countBatchLines } from './apply-batches';
+export {
+    hashString,
+    glossaryHash,
+    buildCacheSuffix,
+    type CacheSuffixParts,
+} from './cache-key';

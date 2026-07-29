@@ -3,7 +3,8 @@
  * 歌词文件格式解析
  */
 
-import type { Parser, Subtitle, SubtitleLine } from '../types';
+import type { Parser, SerializeOptions, Subtitle, SubtitleLine } from '../types';
+import { composeExportText } from './export-text';
 
 /** 时间码解析：[mm:ss.xx] -> 毫秒 */
 function parseTimecode(tc: string): number {
@@ -63,13 +64,15 @@ export const lrcParser: Parser = {
         return { format: 'lrc', lines, metadata };
     },
 
-    serialize(subtitle: Subtitle): string {
+    serialize(subtitle: Subtitle, options?: SerializeOptions): string {
+        const mode = options?.mode ?? 'translate_only';
         const metaLines = Object.entries(subtitle.metadata || {}).map(
             ([key, value]) => `[${key}:${value}]`
         );
         const lyricLines = subtitle.lines.map((line) => {
             const tc = formatTimecode(line.start);
-            const text = line.translated || line.text;
+            // LRC 单行格式：双语用空格分隔，避免破坏时间轴行结构
+            const text = composeExportText(line, mode, ' / ');
             return `[${tc}]${text}`;
         });
         return [...metaLines, ...lyricLines].join('\n');

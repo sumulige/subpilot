@@ -54,6 +54,7 @@ class DeepInfraProvider implements Provider {
             messages,
             temperature: req.temperature ?? 0.3,
             signal: req.signal,
+            cacheConfig: req.cacheConfig,
         });
 
         return {

@@ -151,9 +151,15 @@ export interface Subtitle {
 // Parser Interface
 // ============================================================================
 
+/** 序列化选项：双语组装只在导出阶段发生 */
+export interface SerializeOptions {
+    /** 导出模式，默认 translate_only */
+    mode?: SubtitleMode;
+}
+
 export interface Parser {
     parse(content: string): Subtitle;
-    serialize(subtitle: Subtitle): string;
+    serialize(subtitle: Subtitle, options?: SerializeOptions): string;
 }
 
 // ============================================================================

@@ -3,7 +3,8 @@
  * Advanced SubStation Alpha 字幕格式解析
  */
 
-import type { Parser, Subtitle, SubtitleLine } from '../types';
+import type { Parser, SerializeOptions, Subtitle, SubtitleLine } from '../types';
+import { composeExportText } from './export-text';
 
 /** 时间码解析：0:01:23.45 -> 毫秒 */
 function parseTimecode(tc: string): number {
@@ -76,8 +77,9 @@ export const assParser: Parser = {
         return { format: 'ass', lines, metadata };
     },
 
-    serialize(subtitle: Subtitle): string {
+    serialize(subtitle: Subtitle, options?: SerializeOptions): string {
         // 简化输出，仅保留基本结构
+        const mode = options?.mode ?? 'translate_only';
         const header = `[Script Info]
 Title: Translated Subtitle
 ScriptType: v4.00+
@@ -93,10 +95,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
             const start = formatTimecode(line.start);
             const end = formatTimecode(line.end);
             const style = line.style || 'Default';
-            const text = line.translated
-                ? `${line.text}\\N${line.translated}`
-                : line.text;
-            return `Dialogue: 0,${start},${end},${style},,0,0,0,,${text.replace(/\n/g, '\\N')}`;
+            // translated 仅为纯译文；双语在此按 mode 组装，避免三重原文
+            const text = composeExportText(line, mode, '\n').replace(/\n/g, '\\N');
+            return `Dialogue: 0,${start},${end},${style},,0,0,0,,${text}`;
         });
 
         return `${header}\n${dialogues.join('\n')}`;

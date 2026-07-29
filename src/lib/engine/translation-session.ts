@@ -220,17 +220,32 @@ export function getSessionSummary(session: TranslationSession): {
 
 /**
  * 将 File 对象转换为可存储的格式
+ * @param lineCounts 可选：真实字幕行数（优先于按换行粗估）
  */
-export async function filesToStoredFiles(files: File[]): Promise<StoredFile[]> {
+export async function filesToStoredFiles(
+    files: File[],
+    lineCounts?: number[]
+): Promise<StoredFile[]> {
     return Promise.all(
-        files.map(async (file) => {
+        files.map(async (file, i) => {
             const content = await file.text();
-            const lineCount = content.split('\n').filter(l => l.trim()).length;
+            const lineCount =
+                lineCounts?.[i] ??
+                content.split('\n').filter((l) => l.trim()).length;
             return {
                 name: file.name,
                 content,
                 lineCount,
             };
         })
+    );
+}
+
+/**
+ * 从 StoredFile 还原 File 对象（会话恢复用）
+ */
+export function storedFilesToFiles(stored: StoredFile[]): File[] {
+    return stored.map(
+        (f) => new File([f.content], f.name, { type: 'text/plain' })
     );
 }

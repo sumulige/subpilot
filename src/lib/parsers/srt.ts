@@ -3,7 +3,8 @@
  * SubRip 字幕格式解析
  */
 
-import type { Parser, Subtitle, SubtitleLine } from '../types';
+import type { Parser, SerializeOptions, Subtitle, SubtitleLine } from '../types';
+import { composeExportText } from './export-text';
 
 /** 时间码解析：00:01:23,456 -> 毫秒 */
 function parseTimecode(tc: string): number {
@@ -60,13 +61,14 @@ export const srtParser: Parser = {
         return { format: 'srt', lines };
     },
 
-    serialize(subtitle: Subtitle): string {
+    serialize(subtitle: Subtitle, options?: SerializeOptions): string {
+        const mode = options?.mode ?? 'translate_only';
         return subtitle.lines
             .map((line, i) => {
                 const idx = line.index || i + 1;
                 const start = formatTimecode(line.start);
                 const end = formatTimecode(line.end);
-                const text = line.translated ?? line.text;
+                const text = composeExportText(line, mode, '\n');
                 return `${idx}\n${start} --> ${end}\n${text}`;
             })
             .join('\n\n');

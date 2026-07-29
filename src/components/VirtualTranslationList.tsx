@@ -155,8 +155,8 @@ export function VirtualTranslationList({
                                     minHeight: `${virtualItem.size}px`,
                                     transform: `translateY(${virtualItem.start}px)`,
                                 }}
-                                className={`px-3 py-2 border-b border-white/5 ${isLatest ? 'bg-indigo-500/10' : ''
-                                    } hover:bg-white/5 transition-colors`}
+                                className={`px-3 py-2 border-b border-border ${isLatest ? 'bg-brand/8' : ''
+                                    } hover:bg-muted/40 transition-colors`}
                             >
                                 {/* Original text */}
                                 <div className="text-xs text-muted-foreground mb-1 truncate" title={line.original}>
@@ -170,13 +170,13 @@ export function VirtualTranslationList({
                                         onChange={(e) => setEditValue(e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(e, index)}
                                         onBlur={() => handleSaveEdit(index)}
-                                        className="w-full bg-white/10 border border-indigo-500/50 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                                        className="w-full bg-muted/50 border border-brand/40 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand resize-none"
                                         rows={2}
                                         autoFocus
                                     />
                                 ) : (
                                     <div
-                                        className={`text-sm cursor-text hover:bg-white/10 rounded px-1 -mx-1 ${isLatest && isTranslating ? 'typing-cursor' : ''
+                                        className={`text-sm cursor-text hover:bg-muted/50 rounded px-1 -mx-1 ${isLatest && isTranslating ? 'typing-cursor' : ''
                                             }`}
                                         onClick={() => !isTranslating && handleStartEdit(index, line.translated)}
                                         title={t('common.clickToEdit')}

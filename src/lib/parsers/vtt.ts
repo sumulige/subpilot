@@ -3,7 +3,8 @@
  * WebVTT 字幕格式解析
  */
 
-import type { Parser, Subtitle, SubtitleLine } from '../types';
+import type { Parser, SerializeOptions, Subtitle, SubtitleLine } from '../types';
+import { composeExportText } from './export-text';
 
 /** 时间码解析：00:01:23.456 -> 毫秒 */
 function parseTimecode(tc: string): number {
@@ -73,15 +74,14 @@ export const vttParser: Parser = {
         return { format: 'vtt', lines };
     },
 
-    serialize(subtitle: Subtitle): string {
+    serialize(subtitle: Subtitle, options?: SerializeOptions): string {
+        const mode = options?.mode ?? 'translate_only';
         const header = 'WEBVTT\n\n';
         const body = subtitle.lines
             .map((line) => {
                 const start = formatTimecode(line.start);
                 const end = formatTimecode(line.end);
-                const text = line.translated
-                    ? `${line.text}\n${line.translated}`
-                    : line.text;
+                const text = composeExportText(line, mode, '\n');
                 return `${start} --> ${end}\n${text}`;
             })
             .join('\n\n');

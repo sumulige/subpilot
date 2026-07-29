@@ -13,6 +13,7 @@ export { srtParser } from './srt';
 export { vttParser } from './vtt';
 export { lrcParser } from './lrc';
 export { assParser } from './ass';
+export { composeExportText } from './export-text';
 
 /** 根据格式获取解析器 */
 export function getParser(format: SubtitleFormat): Parser {

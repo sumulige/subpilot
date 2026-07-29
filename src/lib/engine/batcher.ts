@@ -9,6 +9,7 @@ import { cache } from './cache';
 import { withRetry, TranslationError, ErrorType } from './errors';
 import { registry } from '../providers/registry';
 import { createLogger, LogLevel } from '../logger';
+import { buildCacheSuffix, glossaryHash } from './cache-key';
 
 // ============================================================================
 // Configuration
@@ -278,7 +279,15 @@ async function translateBatch(
 ): Promise<void> {
     const { provider, source, target, config = {} } = options;
     const cfg = { ...DEFAULT_CONFIG, ...config };
-    const cacheKey = `${provider.id}:${source}:${target}:${cfg.tacticLite ? 'tactic' : 'std'}`;
+    const cacheKey = buildCacheSuffix({
+        providerId: provider.id,
+        source,
+        target,
+        mode: cfg.tacticLite ? 'tactic' : 'std',
+        glossaryHash: glossaryHash(cfg.glossary),
+        temperature: options.temperature,
+        promptVer: 'v1',
+    });
 
     const log = createLogger(`Batch ${batch.index}`);
     if (cfg.debug) log.setLevel(LogLevel.DEBUG);
@@ -552,10 +561,16 @@ export async function translateWithBatching(
     });
 
     // 过滤空行，保留原始索引映射
+    // 已有 translated 的行（断点续翻）直接跳过，不进入批次
     const nonEmptyLines: { original: SubtitleLine; index: number }[] = [];
     const results: SubtitleLine[] = lines.map((line) => ({ ...line }));
+    let skippedTranslated = 0;
 
     for (let i = 0; i < lines.length; i++) {
+        if (lines[i].translated != null && lines[i].translated !== '') {
+            skippedTranslated++;
+            continue;
+        }
         if (lines[i].text.trim()) {
             nonEmptyLines.push({ original: lines[i], index: i });
         } else {
@@ -564,6 +579,10 @@ export async function translateWithBatching(
     }
 
     if (nonEmptyLines.length === 0) {
+        options.onProgress?.({
+            current: lines.length,
+            total: lines.length,
+        });
         return results;
     }
 
@@ -573,9 +592,12 @@ export async function translateWithBatching(
         config
     );
 
-    // 进度追踪
-    let completedLines = 0;
-    const totalLines = nonEmptyLines.length;
+    // 进度追踪（已跳过的续翻行计入完成数）
+    let completedLines = skippedTranslated;
+    const totalLines = nonEmptyLines.length + skippedTranslated;
+    if (skippedTranslated > 0) {
+        options.onProgress?.({ current: completedLines, total: totalLines });
+    }
 
     // 创建限制器
     const limit = createLimiter(config.concurrency);

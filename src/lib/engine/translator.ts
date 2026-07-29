@@ -41,6 +41,7 @@ export async function translateSubtitle(
     }
 
     // 使用智能批量翻译
+    // 注意：translated 只存纯译文；双语在 parser.serialize(mode) 时组装
     const translatedLines = await translateWithBatching(subtitle.lines, {
         provider,
         source,
@@ -57,26 +58,9 @@ export async function translateSubtitle(
         signal,
     });
 
-    // 双语处理 (Bilingual Post-processing)
-    // 如果是双语模式，将原文合并到译文中
-    // Batcher 只负责返回 translated 字段，这里处理格式
-    const finalLines = translatedLines.map(line => {
-        if (!line.translated) return line;
-
-        if (opts.subtitleMode === 'bilingual') {
-            // 默认格式：原文 \n 译文
-            // 注意：有些用户喜欢 译文 \n 原文，这里先固定为 原文 \n 译文
-            return {
-                ...line,
-                translated: `${line.text}\n${line.translated}`
-            };
-        }
-        return line;
-    });
-
     return {
         ...subtitle,
-        lines: finalLines,
+        lines: translatedLines,
     };
 }
 
