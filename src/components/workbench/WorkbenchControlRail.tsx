@@ -7,7 +7,7 @@ import {
   ChevronDown,
   Play,
   Download,
-  Loader2,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import type { ProviderConfig, SubtitleMode } from '@/lib/types';
 import type { BatcherConfig } from '@/lib/engine/batcher';
 import type { FileProgress } from '@/lib/types/file-progress';
+import type { JobStatus } from '@/lib/job';
 
 export interface WorkbenchControlRailProps {
   fileCount: number;
@@ -44,8 +45,6 @@ export interface WorkbenchControlRailProps {
   onBatcherConfigChange: (config: Partial<BatcherConfig>) => void;
   temperature: number;
   onTemperatureChange: (v: number) => void;
-  qualityEvalEnabled: boolean;
-  onQualityEvalChange: (v: boolean) => void;
   debugMode: boolean;
   onDebugModeChange: (v: boolean) => void;
   glossaryText: string;
@@ -55,8 +54,10 @@ export interface WorkbenchControlRailProps {
   activeFileIndex: number;
   onActiveFileIndexChange: (i: number) => void;
   isTranslating: boolean;
+  jobStatus: JobStatus;
   hasResults: boolean;
   onStart: () => void;
+  onCancel: () => void;
   onDownload: () => void;
 }
 
@@ -155,8 +156,6 @@ export function WorkbenchControlRail(props: WorkbenchControlRailProps) {
             onConfigChange={props.onBatcherConfigChange}
             temperature={props.temperature}
             onTemperatureChange={props.onTemperatureChange}
-            qualityEvalEnabled={props.qualityEvalEnabled}
-            onQualityEvalChange={props.onQualityEvalChange}
             debugMode={props.debugMode}
             glossaryText={props.glossaryText}
             onGlossaryTextChange={props.onGlossaryTextChange}
@@ -248,24 +247,30 @@ export function WorkbenchControlRail(props: WorkbenchControlRailProps) {
           </div>
         )}
 
-        <div className="flex gap-2">
-          <Button
-            onClick={props.onStart}
-            disabled={props.isTranslating || props.fileCount === 0}
-            className="flex-1"
-          >
-            {props.isTranslating ? (
-              <>
-                <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
-                {t('common.translating')}
-              </>
-            ) : (
-              <>
-                <Play className="size-4" strokeWidth={1.75} />
-                {t('common.start')}
-              </>
-            )}
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {props.isTranslating ? (
+            <Button
+              variant="outline"
+              onClick={props.onCancel}
+              className="flex-1"
+            >
+              <Square className="size-3.5" strokeWidth={1.75} />
+              {t('common.cancel')}
+            </Button>
+          ) : (
+            <Button
+              onClick={props.onStart}
+              disabled={props.fileCount === 0}
+              className="flex-1"
+            >
+              <Play className="size-4" strokeWidth={1.75} />
+              {props.jobStatus === 'paused'
+                ? t('common.continue')
+                : props.fileProgresses.some((p) => p.status === 'error')
+                  ? t('common.retryFailed')
+                  : t('common.start')}
+            </Button>
+          )}
 
           {props.hasResults && (
             <Button variant="outline" onClick={props.onDownload}>

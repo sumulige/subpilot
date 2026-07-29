@@ -63,11 +63,8 @@ export default function Home() {
   const [batcherConfig, setBatcherConfig] = useLocalStorage<BatcherPrefs>(
     'batcherConfig',
     {}
-  );  const [debugMode, setDebugMode] = useLocalStorage('debugMode', false);
-  const [qualityEvalEnabled, setQualityEvalEnabled] = useLocalStorage(
-    'qualityEvalEnabled',
-    false
   );
+  const [debugMode, setDebugMode] = useLocalStorage('debugMode', false);
   const [glossaryText, setGlossaryText] = useLocalStorage('glossaryText', '');
 
   const runConfig = useMemo<JobRunConfig>(
@@ -82,7 +79,17 @@ export default function Home() {
       debugMode,
       glossaryText,
     }),
-    [providerId, providerConfig, sourceLanguage, targetLanguage, subtitleMode, temperature, batcherConfig, debugMode, glossaryText]
+    [
+      providerId,
+      providerConfig,
+      sourceLanguage,
+      targetLanguage,
+      subtitleMode,
+      temperature,
+      batcherConfig,
+      debugMode,
+      glossaryText,
+    ]
   );
 
   const handleRecover = useCallback(async () => {
@@ -99,7 +106,14 @@ export default function Home() {
       providerId: session.config.providerId,
       subtitleMode: session.config.subtitleMode,
     });
-  }, [job, runConfig, setSourceLanguage, setTargetLanguage, setProviderId, setSubtitleMode]);
+  }, [
+    job,
+    runConfig,
+    setSourceLanguage,
+    setTargetLanguage,
+    setProviderId,
+    setSubtitleMode,
+  ]);
 
   if (!mounted) return null;
 
@@ -138,8 +152,6 @@ export default function Home() {
             onBatcherConfigChange={setBatcherConfig}
             temperature={temperature}
             onTemperatureChange={setTemperature}
-            qualityEvalEnabled={qualityEvalEnabled}
-            onQualityEvalChange={setQualityEvalEnabled}
             debugMode={debugMode}
             onDebugModeChange={setDebugMode}
             glossaryText={glossaryText}
@@ -149,8 +161,10 @@ export default function Home() {
             activeFileIndex={job.activeFileIndex}
             onActiveFileIndexChange={job.setActiveFileIndex}
             isTranslating={job.isTranslating}
+            jobStatus={job.status}
             hasResults={job.results.length > 0}
             onStart={() => job.start(runConfig)}
+            onCancel={job.cancel}
             onDownload={() => job.downloadAll(subtitleMode, targetLanguage)}
           />
 

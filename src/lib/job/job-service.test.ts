@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TranslationJobService } from './job-service';
 import type { JobStorePort } from './ports';
+import type { JobSnapshot } from './types';
 import type { TranslationSession } from '@/lib/engine/translation-session';
 import type { Subtitle } from '@/lib/types';
 
@@ -164,5 +165,50 @@ describe('TranslationJobService', () => {
     expect(snap.status).toBe('completed');
     expect(snap.results[0].lines[0].translated).toMatch(/^TR:/);
     expect(store.load()).toBeNull();
+  });
+
+  it('cancel 将 running 置为 paused 并落盘', async () => {
+    const file = mockFile('Hello', 'a.srt');
+    await service.loadFiles([file]);
+
+    // 模拟已进入 running 的内部状态
+    const internal = service as unknown as {
+      snap: JobSnapshot;
+      session: ReturnType<JobStorePort['create']> | null;
+      abort: AbortController | null;
+    };
+    const session = store.create(
+      [{ name: 'a.srt', content: 'Hello', lineCount: 1 }],
+      {
+        sourceLanguage: 'en',
+        targetLanguage: 'zh',
+        providerId: 'mock',
+        modelId: '',
+        subtitleMode: 'translate_only',
+      }
+    );
+    store.save(session);
+    internal.session = session;
+    internal.abort = new AbortController();
+    internal.snap = {
+      ...service.getSnapshot(),
+      status: 'running',
+      fileProgresses: [
+        {
+          fileIndex: 0,
+          fileName: 'a.srt',
+          status: 'translating',
+          current: 0,
+          total: 1,
+        },
+      ],
+      fileBatches: {},
+    };
+
+    service.cancel();
+
+    expect(service.getSnapshot().status).toBe('paused');
+    expect(service.getSnapshot().fileProgresses[0].status).toBe('pending');
+    expect(store.load()).not.toBeNull();
   });
 });

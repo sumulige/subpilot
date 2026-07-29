@@ -195,11 +195,36 @@ export class TranslationJobService {
     this.abort?.abort();
     this.abort = null;
     if (this.snap.status === 'running' || this.snap.status === 'preparing') {
-      this.setStatus('paused');
+      const fileProgresses = this.snap.fileProgresses.map((p) =>
+        p.status === 'translating'
+          ? { ...p, status: 'pending' as const }
+          : p
+      );
+      if (this.session) {
+        this.session.fileProgresses = fileProgresses;
+        this.session.completedBatches = { ...this.snap.fileBatches };
+        this.store.save(this.session);
+      }
+      this.setStatus('paused', { fileProgresses });
     }
   }
 
-  /** 开始 / 续跑 */
+  /** 从当前内存快照构造可续跑 session（错误/中断文件 → pending） */
+  private snapshotAsResumeSession(): TranslationSession | null {
+    if (!this.session) return null;
+    return {
+      ...this.session,
+      completedBatches: { ...this.snap.fileBatches },
+      fileProgresses: this.snap.fileProgresses.map((p) => {
+        if (p.status === 'translating' || p.status === 'error') {
+          return { ...p, status: 'pending' as const, error: undefined };
+        }
+        return p;
+      }),
+    };
+  }
+
+  /** 开始 / 续跑（paused、failed 自动从检查点继续） */
   async start(
     config: JobRunConfig,
     resumeSession?: TranslationSession | null
@@ -211,7 +236,18 @@ export class TranslationJobService {
       return;
     }
 
-    if (this.snap.status === 'running') return;
+    if (this.snap.status === 'running' || this.snap.status === 'preparing') {
+      return;
+    }
+
+    let resume = resumeSession ?? null;
+    if (
+      !resume &&
+      this.session &&
+      (this.snap.status === 'paused' || this.snap.status === 'failed')
+    ) {
+      resume = this.snapshotAsResumeSession();
+    }
 
     this.abort?.abort();
     this.abort = new AbortController();
@@ -224,14 +260,14 @@ export class TranslationJobService {
       config.providerConfig.model ?? config.providerConfig.modelId ?? ''
     );
 
-    const existingBatches: Record<number, TranslationBatch[]> = resumeSession
-      ? { ...resumeSession.completedBatches }
+    const existingBatches: Record<number, TranslationBatch[]> = resume
+      ? { ...resume.completedBatches }
       : {};
 
-    if (resumeSession) {
+    if (resume) {
       this.session = {
-        ...resumeSession,
-        fileProgresses: resumeSession.fileProgresses.map((p) =>
+        ...resume,
+        fileProgresses: resume.fileProgresses.map((p) =>
           p.status === 'translating' ? { ...p, status: 'pending' as const } : p
         ),
       };
@@ -380,10 +416,15 @@ export class TranslationJobService {
         this.session = null;
         this.setStatus('completed');
       } else {
-        this.setStatus('failed');
+        // 若已暂停则勿覆盖为 failed
+        if (this.snap.status !== 'paused') {
+          this.setStatus('failed');
+        }
       }
     } catch (e) {
-      this.setStatus('failed', { error: (e as Error).message });
+      if (this.snap.status !== 'paused') {
+        this.setStatus('failed', { error: (e as Error).message });
+      }
     } finally {
       this.abort = null;
     }
